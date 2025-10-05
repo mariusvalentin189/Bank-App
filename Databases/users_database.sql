@@ -7,8 +7,8 @@ CREATE TABLE users (
 user_id INT NOT NULL,
 first_name VARCHAR(50) NOT NULL,
 last_name VARCHAR(50) NOT NULL,
-pin VARCHAR(13) NOT NULL, --Personal Identification Number
-phone_number VARCHAR(17) NOT NULL,
+pin VARCHAR(13) NOT NULL,
+phone_number VARCHAR(10) NOT NULL,
 email VARCHAR(100) NOT NULL,
 user_password VARCHAR(50) NOT NULL
 );

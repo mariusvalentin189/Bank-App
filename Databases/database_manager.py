@@ -39,12 +39,19 @@ class DatabaseManager:
         return len(user_data) > 0
 
     def check_user_data(self, email, password):
+        login_status = 0
         self.__start_connection()
         self.__cursor.execute("SELECT user_password FROM users WHERE email = %s", (email,))
         found_user = self.__cursor.fetchone()
-        print(found_user)
-
         self.__close_connection()
+        if not found_user:
+            login_status = 1
+        elif found_user[0] != password:
+            login_status = 2
+        else:
+            login_status = 3
+        
+        return login_status
     
     def __close_connection(self):
         # Close connection

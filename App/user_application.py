@@ -13,7 +13,7 @@ class UserApplication(QWidget):
         super().__init__()
         
         self.setWindowTitle("My Bank")
-        self.setFixedSize(400, 600)
+        self.setFixedSize(450, 600)
 
         self.__database_manager = DatabaseManager()
 
@@ -59,7 +59,7 @@ class RegisterPage(QWidget):
         self.__password = QLineEdit()
         self.__password.setEchoMode(QLineEdit.EchoMode.Password)
         self.__phone_number = DigitOnlyLineEdit()
-        self.__phone_number.setMaxLength(17)
+        self.__phone_number.setMaxLength(10) #Length for romanian phone numbers
 
         grid_layout = QGridLayout()
         grid_layout.addWidget(QLabel("First Name:"), 0, 0)
@@ -68,7 +68,7 @@ class RegisterPage(QWidget):
         grid_layout.addWidget(QLabel("Last Name:"), 1, 0)
         grid_layout.addWidget(self.__last_name, 1, 1)
 
-        grid_layout.addWidget(QLabel("PIN:"), 2, 0)
+        grid_layout.addWidget(QLabel("Personal Identification Number:"), 2, 0)
         grid_layout.addWidget(self.__pin, 2, 1)
 
         grid_layout.addWidget(QLabel("Phone Number:"), 3, 0)
@@ -81,7 +81,6 @@ class RegisterPage(QWidget):
         grid_layout.addWidget(self.__password, 5, 1)
 
         self.__status_message = QLabel()
-        self.__status_message.setMaximumHeight(12) 
         self.__status_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         register_button = QPushButton("Register")
@@ -91,6 +90,7 @@ class RegisterPage(QWidget):
         back_button.clicked.connect(back_function)
 
         bottom_layout = QVBoxLayout()
+        bottom_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
         bottom_layout.addWidget(self.__status_message)
         bottom_layout.addWidget(register_button)
         bottom_layout.addWidget(back_button)
@@ -103,34 +103,35 @@ class RegisterPage(QWidget):
 
     def __register_user(self):
         user_data = [1, 
-                        self.__first_name.text().strip(), 
-                        self.__last_name.text().strip(), 
-                        self.__pin.text().strip(), 
-                        self.__phone_number.text().strip(),
-                        self.__email.text().strip(),
-                        self.__password.text().strip()]
+                    self.__first_name.text().strip(), 
+                    self.__last_name.text().strip(), 
+                    self.__pin.text().strip(), 
+                    self.__phone_number.text().strip(),
+                    self.__email.text().strip(),
+                    self.__password.text().strip()]
         if not self.__is_data_entered():
             self.__status_message.setText("All fields are required")
         elif not self.__pin_valid():
             self.__status_message.setText("Personal Identification Number not Valid")
         elif not self.__is_valid_phone_number():
             self.__status_message.setText("Phone number not Valid")
-        elif not self.__is_valid_email(self.__email.text().strip()):
+        elif not self.__is_valid_email():
             self.__status_message.setText("Email not Valid")
         elif self.__database_manager.already_registered_user(self.__email.text().strip()):
             self.__status_message.setText("Already registered")
         else:
             self.__database_manager.insert_user_data(user_data)
-            self.__valid_user_data = False
             self.__status_message.setText("Registered successfuly")
             self.__empty_data()
 
-    def __is_valid_email(self, email):
+    def __is_valid_email(self):
         pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-        return re.match(pattern, email) is not None
+        return re.match(pattern, self.__email.text().strip()) is not None
     
-    def __is_valid_phone_number(self, phone_number):
-        return phone_number.isdigit()
+    def __is_valid_phone_number(self):
+        #Romanian mobile phone number check
+        pattern = r'^07\d{8}$'
+        return re.match(pattern, self.__phone_number.text().strip()) is not None
     
     def __is_data_entered(self):
         return (len(self.__first_name.text().strip()) > 0 and 
@@ -176,7 +177,11 @@ class MainPage(QWidget):
         grid_layout.addWidget(self.__password, 1, 1)
         grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
+        self.__status_message = QLabel()
+        self.__status_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         bottom_layout = QVBoxLayout()
+        bottom_layout.addWidget(self.__status_message)
         bottom_layout.addWidget(login_button)
         bottom_layout.addWidget(register_button)
         bottom_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
@@ -188,11 +193,29 @@ class MainPage(QWidget):
         self.setLayout(main_layout)
 
     def __login_user(self):
-        #TODO: Add credential verification
-        #self.__database_manager.check_user_data("asd@gmail.com", "asd")
+        if not self.__credentials_filled():
+            self.__status_message.setText("All fields are required")
+        elif not self.__is_valid_email():
+            self.__status_message.setText("Email is not valid")
+        else:
+            login_status_id = self.__database_manager.check_user_data(self.__email.text().strip(), self.__password.text().strip())
+            if login_status_id == 1:
+                #User not found
+                self.__status_message.setText("Email not found")
+            elif login_status_id == 2:
+                #Wrong password
+                self.__status_message.setText("Wrong password")
+            else:
+                #Login user
+                self.__login_function()
 
-        #Change window
-        self.__login_function()
+    def __is_valid_email(self):
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        return re.match(pattern, self.__email.text().strip()) is not None
+
+    def __credentials_filled(self):
+        return len(self.__email.text().strip()) > 0 and len(self.__password.text().strip()) > 0
+
 
 #User accounts page
 class UserAccountPage(QWidget):
@@ -223,8 +246,16 @@ class UserAccountPage(QWidget):
 def open_app():
     app = QApplication(sys.argv)
 
+    # Load and apply CSS stylesheet
+    stylesheet = load_stylesheet("./Style/app_style.css")
+    app.setStyleSheet(stylesheet)
+
     window = UserApplication()
     window.show()
 
     sys.exit(app.exec())
+
+def load_stylesheet(file_path):
+    with open(file_path, "r") as f:
+        return f.read()
     
