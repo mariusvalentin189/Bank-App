@@ -4,11 +4,11 @@ from PyQt6.QtCore import Qt
 import sys
 from Databases.database_manager import DatabaseManager
 from Custom.custom_classes import DigitOnlyLineEdit
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QStackedWidget, QGridLayout, QLabel, QLineEdit
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QStackedWidget, QGridLayout, QLabel, QLineEdit, QFrame
 
 
 #Main app for the user
-class UserApplication(QWidget):
+class UserApplication(QFrame):
     def __init__(self):
         super().__init__()
         
@@ -19,8 +19,6 @@ class UserApplication(QWidget):
 
         self.__stack = QStackedWidget()
 
-        self.__stack.setCurrentIndex(1)
-
         self.__main_page = MainPage(self.__database_manager, self.__open_register_window, self.__open_accounts_window)
         self.__register_Page = RegisterPage(self.__database_manager, self.__back_to_main_window)
         self.__accounts_page = UserAccountPage(self.__database_manager, self.__back_to_main_window)
@@ -30,10 +28,9 @@ class UserApplication(QWidget):
         self.__stack.addWidget(self.__accounts_page)
 
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.__stack)
         self.setLayout(layout)
-
-        self.__stack.setCurrentIndex(0)
 
     def __open_register_window(self):
         self.__stack.setCurrentIndex(1)
@@ -45,7 +42,7 @@ class UserApplication(QWidget):
         self.__stack.setCurrentIndex(0)
 
 #Register Page
-class RegisterPage(QWidget):
+class RegisterPage(QFrame):
     def __init__(self, database_manager: DatabaseManager, back_function):
         super().__init__()
 
@@ -153,9 +150,11 @@ class RegisterPage(QWidget):
         self.__password.setText("")
 
 #Main Page
-class MainPage(QWidget):
+class MainPage(QFrame):
     def __init__(self, database_manager : DatabaseManager, register_function, login_function):
         super().__init__()
+        self.setAutoFillBackground(True)
+        self.setObjectName("MainPage")
         self.__database_manager = database_manager
         self.__login_function = login_function
         self.__email = QLineEdit()
@@ -164,6 +163,8 @@ class MainPage(QWidget):
 
         register_button = QPushButton("Register")
         register_button.clicked.connect(register_function)
+
+        forgot_password_button = QPushButton("Forgot Password")
 
         login_button = QPushButton("Login")
         login_button.clicked.connect(self.__login_user)
@@ -177,17 +178,21 @@ class MainPage(QWidget):
         grid_layout.addWidget(self.__password, 1, 1)
         grid_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
+        register_grid_layout = QGridLayout()
+        register_grid_layout.addWidget(register_button, 0, 0)
+        register_grid_layout.addWidget(forgot_password_button, 0, 1)
+
         self.__status_message = QLabel()
         self.__status_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         bottom_layout = QVBoxLayout()
         bottom_layout.addWidget(self.__status_message)
         bottom_layout.addWidget(login_button)
-        bottom_layout.addWidget(register_button)
         bottom_layout.setAlignment(Qt.AlignmentFlag.AlignBottom)
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(grid_layout)
+        main_layout.addLayout(register_grid_layout)
         main_layout.addLayout(bottom_layout)
 
         self.setLayout(main_layout)
@@ -218,14 +223,15 @@ class MainPage(QWidget):
 
 
 #User accounts page
-class UserAccountPage(QWidget):
+class UserAccountPage(QFrame):
     def __init__(self, database_manager : DatabaseManager, logout_function):
         super().__init__()
         self.__database_manager = database_manager
-
+        user_name = "Test User" #Temporary
         top_layout = QVBoxLayout()
 
-        title = QLabel("Your accounts")
+        title = QLabel(f"Hello, {user_name}")
+        title.setObjectName("UserAccountTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignTop)
         top_layout.addWidget(title)
 

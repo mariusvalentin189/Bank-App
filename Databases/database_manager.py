@@ -2,15 +2,15 @@ import mysql.connector
 
 class DatabaseManager:
     def __init__(self):
-        content = ""
+        user_password = ""
         with open('Credentials/data.txt', 'r') as file:
-            content = file.read()
+            user_password = file.read()
 
         # Connect to the database
         self.__conn = mysql.connector.connect(
             host="localhost",
             user="root",
-            password=content,
+            password=user_password,
             database="users_database"
         )
         self.__cursor = self.__conn.cursor()
