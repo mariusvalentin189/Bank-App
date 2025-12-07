@@ -53,6 +53,14 @@ class DatabaseManager:
         
         return login_status
     
+    def get_user_info(self, email):
+        self.__start_connection()
+        self.__cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        found_user = self.__cursor.fetchone()
+        self.__close_connection()
+
+        return found_user
+    
     def __close_connection(self):
         # Close connection
         self.__cursor.close()

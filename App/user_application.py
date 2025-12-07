@@ -21,7 +21,7 @@ class UserApplication(QFrame):
 
         self.__main_page = MainPage(self.__database_manager, self.__open_register_window, self.__open_accounts_window)
         self.__register_Page = RegisterPage(self.__database_manager, self.__back_to_main_window)
-        self.__accounts_page = UserAccountPage(self.__database_manager, self.__back_to_main_window)
+        self.__accounts_page = UserAccountPage(self.__back_to_main_window)
 
         self.__stack.addWidget(self.__main_page)
         self.__stack.addWidget(self.__register_Page)
@@ -35,7 +35,8 @@ class UserApplication(QFrame):
     def __open_register_window(self):
         self.__stack.setCurrentIndex(1)
     
-    def __open_accounts_window(self):
+    def __open_accounts_window(self, user_info):
+        self.__accounts_page.set_user_info(user_info)
         self.__stack.setCurrentIndex(2)
     
     def __back_to_main_window(self):
@@ -55,6 +56,8 @@ class RegisterPage(QFrame):
         self.__email = QLineEdit()
         self.__password = QLineEdit()
         self.__password.setEchoMode(QLineEdit.EchoMode.Password)
+        self.__confirm_password = QLineEdit()
+        self.__confirm_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.__phone_number = DigitOnlyLineEdit()
         self.__phone_number.setMaxLength(10) #Length for romanian phone numbers
 
@@ -76,6 +79,9 @@ class RegisterPage(QFrame):
 
         grid_layout.addWidget(QLabel("Password:"), 5, 0)
         grid_layout.addWidget(self.__password, 5, 1)
+
+        grid_layout.addWidget(QLabel("Confirm password:"), 6, 0)
+        grid_layout.addWidget(self.__confirm_password, 6, 1)
 
         self.__status_message = QLabel()
         self.__status_message.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -105,7 +111,7 @@ class RegisterPage(QFrame):
                     self.__pin.text().strip(), 
                     self.__phone_number.text().strip(),
                     self.__email.text().strip(),
-                    self.__password.text().strip()]
+                    self.__password.text()]
         if not self.__is_data_entered():
             self.__status_message.setText("All fields are required")
         elif not self.__pin_valid():
@@ -116,6 +122,8 @@ class RegisterPage(QFrame):
             self.__status_message.setText("Email not Valid")
         elif self.__database_manager.already_registered_user(self.__email.text().strip()):
             self.__status_message.setText("Already registered")
+        elif not self.__password_matches():
+            self.__status_message.setText("Password does not match")
         else:
             self.__database_manager.insert_user_data(user_data)
             self.__status_message.setText("Registered successfuly")
@@ -135,11 +143,15 @@ class RegisterPage(QFrame):
         len(self.__last_name.text().strip()) > 0 and 
         len(self.__pin.text().strip()) > 0 and
         len(self.__email.text().strip()) > 0 and
-        len(self.__password.text().strip()) > 0 and 
+        len(self.__password.text()) > 0 and
+        len(self.__confirm_password.text()) > 0 and 
         len(self.__phone_number.text().strip()) > 0)
 
     def __pin_valid(self):
         return len(self.__pin.text().strip()) == 13
+    
+    def __password_matches(self):
+        return self.__password.text() == self.__confirm_password.text()
 
     def __empty_data(self):
         self.__first_name.setText("")
@@ -148,6 +160,7 @@ class RegisterPage(QFrame):
         self.__phone_number.setText("")
         self.__email.setText("")
         self.__password.setText("")
+        self.__confirm_password.setText("")
 
 #Main Page
 class MainPage(QFrame):
@@ -203,7 +216,7 @@ class MainPage(QFrame):
         elif not self.__is_valid_email():
             self.__status_message.setText("Email is not valid")
         else:
-            login_status_id = self.__database_manager.check_user_data(self.__email.text().strip(), self.__password.text().strip())
+            login_status_id = self.__database_manager.check_user_data(self.__email.text().strip(), self.__password.text())
             if login_status_id == 1:
                 #User not found
                 self.__status_message.setText("Email not found")
@@ -212,30 +225,33 @@ class MainPage(QFrame):
                 self.__status_message.setText("Wrong password")
             else:
                 #Login user
-                self.__login_function()
+                user_info = self.__database_manager.get_user_info(self.__email.text().strip())
+                self.__login_function(user_info)
 
     def __is_valid_email(self):
         pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         return re.match(pattern, self.__email.text().strip()) is not None
 
     def __credentials_filled(self):
-        return len(self.__email.text().strip()) > 0 and len(self.__password.text().strip()) > 0
+        return len(self.__email.text().strip()) > 0 and len(self.__password.text()) > 0
 
 
 #User accounts page
 class UserAccountPage(QFrame):
-    def __init__(self, database_manager : DatabaseManager, logout_function):
+    def __init__(self, logout_function):
         super().__init__()
-        self.__database_manager = database_manager
-        user_name = "Test User" #Temporary
+        self.__user_info = None
         top_layout = QVBoxLayout()
 
-        title = QLabel(f"Hello, {user_name}")
-        title.setObjectName("UserAccountTitle")
-        title.setAlignment(Qt.AlignmentFlag.AlignTop)
-        top_layout.addWidget(title)
+        self.__title = QLabel("")
+        self.__title.setObjectName("UserAccountTitle")
+        self.__title.setAlignment(Qt.AlignmentFlag.AlignTop)
+        top_layout.addWidget(self.__title)
 
         grid_layout = QGridLayout()
+
+        grid_layout.addWidget(QLabel("Account Balance:"), 0, 0)
+        grid_layout.addWidget(QLabel("0"), 0, 1) #Temporary 
 
         bottom_layout = QVBoxLayout()
         logout_button = QPushButton("Log out")
@@ -248,6 +264,10 @@ class UserAccountPage(QFrame):
         main_layout.addLayout(bottom_layout)
 
         self.setLayout(main_layout)
+
+    def set_user_info(self, user_info):
+        self.__user_info = user_info
+        self.__title.setText(f"Hello, {self.__user_info[2]}")
 
 def open_app():
     app = QApplication(sys.argv)
